@@ -62,7 +62,7 @@ async function runMigrations() {
 const app = express();
 
 // Настройка CORS
-app.use(cors({ origin: '*', credentials: true })); // Разрешение запросов с любого источника
+app.use(cors({ credentials: true, origin: true }));
 
 // Настройка для статических файлов
 app.use(express.static(path.join(__dirname, 'public')));
