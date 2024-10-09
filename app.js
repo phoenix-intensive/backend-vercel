@@ -62,7 +62,10 @@ async function runMigrations() {
 const app = express();
 
 // Настройка CORS
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors({
+    origin: 'https://phoenix-intensive.github.io', // ваш клиентский домен
+    credentials: true // если вы используете куки
+}));
 
 // Настройка для статических файлов
 app.use(express.static(path.join(__dirname, 'public')));
@@ -80,19 +83,23 @@ app.use(session({
 
 // Настройка Passport.js и стратегии JWT
 passport.use(new JwtStrategy({
-    jwtFromRequest: ExtractJwt.fromHeader('x-access-token'),
+    jwtFromRequest: ExtractJwt.fromHeader('x-access-token'), // Берем токен из заголовка
     secretOrKey: config.secret,
     algorithms: ["HS256"],
 }, async (payload, next) => {
+    console.log("Payload received:", payload); // Логируем полученный payload
     if (!payload.id) {
+        console.log('Invalid token, no ID found'); // Логируем ошибку
         return next(new Error('Не валидный токен'));
     }
 
     try {
         const user = await UserModel.findOne({ _id: payload.id });
         if (user) {
+            console.log('User found:', user); // Логируем найденного пользователя
             return next(null, payload);
         }
+        console.log('User not found'); // Логируем ошибку
         next(new Error('Пользователь не найден'));
     } catch (e) {
         console.log(e);
@@ -102,10 +109,10 @@ passport.use(new JwtStrategy({
 
 app.use(passport.initialize());
 
-// Подключение маршрутов
+// Подключение маршрутов с аутентификацией для защищенных маршрутов
 app.use("/api", authRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/types", typeRoutes);
+app.use("/api/types", passport.authenticate('jwt', { session: false }), typeRoutes); // Защита маршрута
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/favorites", favoriteRoutes);
