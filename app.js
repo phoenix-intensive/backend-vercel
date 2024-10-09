@@ -61,8 +61,8 @@ async function runMigrations() {
 // Создание Express приложения
 const app = express();
 
-// Настройка CORS (добавьте это)
-app.use(cors({ origin: '*', credentials: true }));
+// Настройка CORS
+app.use(cors({ origin: '*', credentials: true })); // Разрешение запросов с любого источника
 
 // Настройка для статических файлов
 app.use(express.static(path.join(__dirname, 'public')));
@@ -71,7 +71,7 @@ app.use(express.json());
 // Настройка сессий
 app.use(session({
     genid: function (req) {
-        return uuidv4();
+        return uuidv4(); // Генерация уникального идентификатора для сессии
     },
     secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
     resave: false,
@@ -91,7 +91,7 @@ passport.use(new JwtStrategy({
     try {
         const user = await UserModel.findOne({ _id: payload.id });
         if (user) {
-            return next(null, payload);
+            return next(null, payload); // Пользователь найден, передаем payload
         }
         next(new Error('Пользователь не найден'));
     } catch (e) {
@@ -100,7 +100,7 @@ passport.use(new JwtStrategy({
     }
 }));
 
-app.use(passport.initialize());
+app.use(passport.initialize()); // Инициализация Passport.js
 
 // Подключение маршрутов
 app.use("/api", authRoutes);
@@ -123,5 +123,5 @@ app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({ error: true, message: err.message });
 });
 
-// Удаление ручного запуска сервера
-module.exports = app; // Экспорт приложения для Vercel
+// Экспорт приложения для использования в других модулях или для развертывания
+module.exports = app; 
