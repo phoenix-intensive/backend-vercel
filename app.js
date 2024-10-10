@@ -62,7 +62,18 @@ async function runMigrations() {
 const app = express();
 
 // Настройка CORS
-app.use(cors({ credentials: true, origin: true }));
+const allowedOrigins = ['http://localhost:3000', 'https://backend-vercel-dmitriys-projects-14aa7181.vercel.app'];
+
+app.use(cors({
+    credentials: true,
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
 
 // Настройка для статических файлов
 app.use(express.static(path.join(__dirname, 'public')));
@@ -75,7 +86,12 @@ app.use(session({
     },
     secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: true, // Это позволит сохранять сессии даже для неавторизованных пользователей
+    cookie: {
+        secure: true, // Убедитесь, что на продакшене работает HTTPS, иначе установите false для локальной разработки
+        httpOnly: true, // Запрещает доступ к куки через JavaScript
+        sameSite: 'lax' // Ограничивает передачу куки, предотвращая CSRF-атаки
+    }
 }));
 
 // Настройка Passport.js и стратегии JWT
@@ -124,4 +140,4 @@ app.use((err, req, res, next) => {
 });
 
 // Экспорт приложения для использования в других модулях или для развертывания
-module.exports = app; 
+module.exports = app;
