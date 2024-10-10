@@ -7,11 +7,13 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const config = require('./src/config/config');
 const categoryRoutes = require('./src/routes/category.routes');
+const typeRoutes = require('./src/routes/type.routes');
+const productRoutes = require('./src/routes/product.routes');
+const cartRoutes = require('./src/routes/cart.routes');
 const authRoutes = require('./src/routes/auth.routes');
+const favoriteRoutes = require('./src/routes/favorite.routes');
+const orderRoutes = require('./src/routes/order.routes');
 const userRoutes = require('./src/routes/user.routes');
-const articleRoutes = require('./src/routes/article.routes'); // Добавлено
-const commentRoutes = require('./src/routes/comment.routes'); // Добавлено
-const requestRoutes = require('./src/routes/request.routes'); // Добавлено
 const UserModel = require('./src/models/user.model');
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
@@ -101,11 +103,13 @@ passport.use(new JwtStrategy({
 app.use(passport.initialize()); // Инициализация Passport.js
 
 // Подключение маршрутов
-app.use("/api/articles", articleRoutes);
-app.use("/api/auth", authRoutes);
+app.use("/api", authRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/comments", commentRoutes);
-app.use("/api/requests", requestRoutes);
+app.use("/api/types", typeRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/favorites", favoriteRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/user", userRoutes);
 
 // Обработка 404 ошибки
