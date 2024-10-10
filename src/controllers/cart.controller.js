@@ -57,19 +57,16 @@ class CartController {
         res.json(CartNormalizer.normalize(cartModel));
     }
 
- static async getCart(req, res) {
-    const userId = req.user ? req.user._id : null; // Проверяем, авторизован ли пользователь
-    const sessionId = req.session.id; // Используем sessionId для неавторизованных
+    static async getCart(req, res) {
+        const cart = await CartService.getCart(req.user, req.session.id);
 
-    // Попробуем получить корзину для пользователя или сессии
-    const cart = await CartService.getCart(userId, sessionId);
+        if (!cart) {
+            return res.status(404)
+                .json({error: true, message: "Корзина не найдена"});
+        }
 
-    if (!cart) {
-        return res.status(404).json({ error: true, message: "Корзина не найдена" });
+        res.json(CartNormalizer.normalize(cart));
     }
-
-    res.json(CartNormalizer.normalize(cart));
-}
 
     static async getCartCount(req, res) {
         const cart = await CartService.getCart(req.user, req.session.id);
