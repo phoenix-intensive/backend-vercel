@@ -61,10 +61,10 @@ async function runMigrations() {
 // Создание Express приложения
 const app = express();
 
-// Настройка CORS
+// Настройка CORS для разрешения запросов с фронтенда и бэкенда
 app.use(cors({
-    origin: 'https://phoenix-intensive.github.io',
-    credentials: true  // Позволяет отправлять и принимать cookie при кросс-доменных запросах
+    origin: ['https://phoenix-intensive.github.io', 'https://backend-vercel-dmitriys-projects-14aa7181.vercel.app'],
+    credentials: true  // Разрешение для отправки и приема cookie при кросс-доменных запросах
 }));
 
 // Настройка для статических файлов
@@ -79,11 +79,6 @@ app.use(session({
     secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
     resave: false,
     saveUninitialized: true,
-    cookie: {
-        secure: true,  // Включить, если используется HTTPS
-        httpOnly: true,
-        sameSite: 'None'  // Разрешает отправку кросс-доменных cookie
-    }
 }));
 
 // Настройка Passport.js и стратегии JWT
