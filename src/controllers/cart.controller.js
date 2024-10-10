@@ -6,23 +6,27 @@ const CartModel = require("../models/cart.model");
 const ProductModel = require("../models/product.model");
 
 class CartController {
-    static async updateCart(req, res) {
-        const {error} = ValidationUtils.updateCartValidation(req.body);
+  static async updateCart(req, res) {
+        const { error } = ValidationUtils.updateCartValidation(req.body);
         if (error) {
-            return res.status(400).json({error: true, message: error.details[0].message});
+            console.log("Validation error:", error.details[0].message);
+            return res.status(400).json({ error: true, message: error.details[0].message });
         }
+
+        // Логируем текущее состояние сессии
+        console.log('Session before update:', req.session);
 
         // Если пользователь не авторизован, сохраняем товары в сессии
         if (!req.user) {
             if (!req.session.cart) {
                 req.session.cart = { items: [] };
             }
-            
-            // Логируем текущую корзину в сессии перед обновлением
-            console.log('Current session cart before update (unauthenticated):', req.session.cart);
 
             const quantity = Number.parseInt(req.body.quantity);
             const productId = req.body.productId;
+
+            // Логируем корзину в сессии перед обновлением
+            console.log('Current session cart before update (unauthenticated):', req.session.cart);
 
             const indexFound = req.session.cart.items.findIndex(item => item.product === productId);
             if (indexFound > -1) {
@@ -37,7 +41,8 @@ class CartController {
                     quantity: quantity,
                 });
             } else {
-                return res.status(400).json({error: true, message: "Проверьте отправляемые данные"});
+                console.log("Invalid data provided for the cart update");
+                return res.status(400).json({ error: true, message: "Проверьте отправляемые данные" });
             }
 
             // Логируем корзину в сессии после обновления
@@ -49,20 +54,22 @@ class CartController {
         const cartModel = await CartService.getCart(req.user, req.session.id);
 
         if (!cartModel) {
-            return res.status(404)
-                .json({error: true, message: "Корзина не найдена"});
+            console.log("Cart not found for user:", req.user);
+            return res.status(404).json({ error: true, message: "Корзина не найдена" });
         }
 
         const quantity = Number.parseInt(req.body.quantity);
         const productId = req.body.productId;
 
         try {
-            const product = await ProductModel.findOne({_id: productId});
+            const product = await ProductModel.findOne({ _id: productId });
             if (!product) {
-                return res.status(404).json({error: true, message: 'Товар не найден'});
+                console.log("Product not found:", productId);
+                return res.status(404).json({ error: true, message: 'Товар не найден' });
             }
         } catch (e) {
-            return res.status(404).json({error: true, message: 'Товар не найден'});
+            console.error("Error finding product:", e);
+            return res.status(404).json({ error: true, message: 'Товар не найден' });
         }
 
         if (!cartModel.items) {
@@ -82,17 +89,19 @@ class CartController {
                 quantity: quantity,
             });
         } else {
-            return res.status(400)
-                .json({error: true, message: "Проверьте отправляемые данные"});
+            console.log("Invalid data provided for the cart update");
+            return res.status(400).json({ error: true, message: "Проверьте отправляемые данные" });
         }
 
         await cartModel.save();
-        await CartModel.populate(cartModel, {path: 'items.product'});
+        await CartModel.populate(cartModel, { path: 'items.product' });
         res.json(CartNormalizer.normalize(cartModel));
     }
 
     static async getCart(req, res) {
         // Логируем корзину в сессии для неавторизованных пользователей
+        console.log('Session when fetching cart:', req.session);
+
         if (!req.user) {
             console.log('Current session cart (unauthenticated):', req.session.cart);
             return res.json(req.session.cart || { items: [] });
@@ -101,27 +110,12 @@ class CartController {
         const cart = await CartService.getCart(req.user, req.session.id);
 
         if (!cart) {
-            return res.status(404)
-                .json({error: true, message: "Корзина не найдена"});
+            console.log("Cart not found for user:", req.user);
+            return res.status(404).json({ error: true, message: "Корзина не найдена" });
         }
 
+        console.log("Fetched cart for user:", req.user);
         res.json(CartNormalizer.normalize(cart));
-    }
-
-    static async getCartCount(req, res) {
-        const cart = await CartService.getCart(req.user, req.session.id);
-
-        if (!cart) {
-            return res.status(404)
-                .json({error: true, message: "Корзина не найдена"});
-        }
-
-        let count = 0;
-        cart.items.forEach(item => {
-            count += item.quantity;
-        })
-
-        res.json({count: count});
     }
 
     static async clearCart(req, res) {
