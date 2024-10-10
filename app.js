@@ -20,17 +20,13 @@ const ExtractJwt = require('passport-jwt').ExtractJwt;
 const migrateMongo = require('migrate-mongo');
 
 // Подключение к MongoDB
-async function connectToDatabase() {
-    try {
-        await mongoose.connect(config.db.dbUrl, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(config.db.dbUrl, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => {
         console.log('Successfully connected to MongoDB');
         mongoose.set('strictQuery', true);
-        await runMigrations(); // Запускаем миграции
-    } catch (err) {
-        console.error('Connection error:', err);
-        process.exit(1); // Завершаем процесс с кодом ошибки
-    }
-}
+        return runMigrations(); // Запускаем миграции
+    })
+    .catch(err => console.error('Connection error', err));
 
 // Функция для выполнения миграций
 async function runMigrations() {
@@ -74,15 +70,12 @@ app.use(express.json());
 
 // Настройка сессий
 app.use(session({
-    genid: () => uuidv4(), // Генерация уникального идентификатора для сессии
-    secret: config.sessionSecret || 'defaultSecret', // Используйте конфиг для секрета
+    genid: function (req) {
+        return uuidv4(); // Генерация уникального идентификатора для сессии
+    },
+    secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
     resave: false,
     saveUninitialized: true,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production', // Используйте secure только в продакшене
-        httpOnly: true,
-        sameSite: 'lax', // Или 'none', если требуется
-    },
 }));
 
 // Настройка Passport.js и стратегии JWT
@@ -91,15 +84,19 @@ passport.use(new JwtStrategy({
     secretOrKey: config.secret,
     algorithms: ["HS256"],
 }, async (payload, next) => {
+    if (!payload.id) {
+        return next(new Error('Не валидный токен'));
+    }
+
     try {
-        const user = await UserModel.findById(payload.id);
+        const user = await UserModel.findOne({ _id: payload.id });
         if (user) {
             return next(null, payload); // Пользователь найден, передаем payload
         }
-        return next(new Error('Пользователь не найден'));
+        next(new Error('Пользователь не найден'));
     } catch (e) {
-        console.error(e);
-        return next(e);
+        console.log(e);
+        next(e);
     }
 }));
 
@@ -116,24 +113,15 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/user", userRoutes);
 
 // Обработка 404 ошибки
-app.use((req, res) => {
+app.use((req, res, next) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
 // Обработка других ошибок
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.statusCode || 500).json({ error: true, message: err.message });
 });
-
-// Запуск сервера
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
-
-// Подключение к базе данных
-connectToDatabase();
 
 // Экспорт приложения для использования в других модулях или для развертывания
 module.exports = app;
