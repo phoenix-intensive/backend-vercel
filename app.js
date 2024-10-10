@@ -76,9 +76,14 @@ app.use(session({
     genid: function (req) {
         return uuidv4(); // Генерация уникального идентификатора для сессии
     },
-    secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
+    secret: process.env.SESSION_SECRET || '0SddfAS9fAdFASASSFwdVCXLZJKHfss', // Использование переменной окружения для секрета
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Изменено на false для предотвращения создания пустых сессий
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Установите secure в true в продакшене
+        httpOnly: true, // Запретить доступ к куки через JavaScript
+        maxAge: 24 * 60 * 60 * 1000 // Установить срок действия куки (1 день)
+    }
 }));
 
 // Настройка Passport.js и стратегии JWT
@@ -123,7 +128,7 @@ app.use((req, res, next) => {
 // Обработка других ошибок
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(err.statusCode || 500).json({ error: true, message: err.message });
+    res.status(err.statusCode || 500).json({ error: true, message: err.message, stack: process.env.NODE_ENV === 'development' ? err.stack : undefined });
 });
 
 // Экспорт приложения для использования в других модулях или для развертывания
