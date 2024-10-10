@@ -62,21 +62,23 @@ async function runMigrations() {
 const app = express();
 
 // Настройка CORS
-app.use(cors({ credentials: true, origin: true }));
-
-// Настройка для статических файлов
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
-
-// Настройка сессий
-app.use(session({
-    genid: function (req) {
-        return uuidv4(); // Генерация уникального идентификатора для сессии
+app.use(cors({
+    origin: function(origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:4200', // Локальная разработка
+            'https://phoenix-intensive.github.io', // Другой домен
+            'https://backend-flower-dmitriys-projects-14aa7181.vercel.app' // Ваш продакшен-домен
+        ];
+        // Если origin пустой (например, при тестировании с Postman), разрешаем
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
     },
-    secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
-    resave: false,
-    saveUninitialized: true,
+    credentials: true // Если вы используете куки или аутентификацию
 }));
+
 
 // Настройка Passport.js и стратегии JWT
 passport.use(new JwtStrategy({
