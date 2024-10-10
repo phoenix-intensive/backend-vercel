@@ -62,17 +62,9 @@ async function runMigrations() {
 const app = express();
 
 // Настройка CORS
-const allowedOrigins = ['http://localhost:3000', 'https://backend-vercel-dmitriys-projects-14aa7181.vercel.app'];
-
 app.use(cors({
-    credentials: true,
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    }
+    origin: 'https://phoenix-intensive.github.io',
+    credentials: true  // Позволяет отправлять и принимать cookie при кросс-доменных запросах
 }));
 
 // Настройка для статических файлов
@@ -86,11 +78,11 @@ app.use(session({
     },
     secret: '0SddfAS9fAdFASASSFwdVCXLZJKHfss',
     resave: false,
-    saveUninitialized: true, // Это позволит сохранять сессии даже для неавторизованных пользователей
+    saveUninitialized: true,
     cookie: {
-        secure: true, // Убедитесь, что на продакшене работает HTTPS, иначе установите false для локальной разработки
-        httpOnly: true, // Запрещает доступ к куки через JavaScript
-        sameSite: 'lax' // Ограничивает передачу куки, предотвращая CSRF-атаки
+        secure: true,  // Включить, если используется HTTPS
+        httpOnly: true,
+        sameSite: 'None'  // Разрешает отправку кросс-доменных cookie
     }
 }));
 
